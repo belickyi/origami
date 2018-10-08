@@ -8,7 +8,7 @@ html(lang="ru")
     head
         meta(charset="utf-8")
         meta(name="viewport" content="width=1180")
-        title Типография онлайн "Online print"
+        title Интернет агенство "Origami"
         //css
         link(rel="stylesheet" href="css/style.min.css")
         //fonts
@@ -18,5 +18,20 @@ html(lang="ru")
 
     body
         container
+            header
+                img.logo.col-2(src="/images/logo-01.svg", alt="logo")
+                span Полиграфический онлайн сервис
+                header-menu.col-8
+                contacts.col-2
+
+            banner
+                banner-text
+                banner-contactform
+            offer
+                landing
+                e-comercie
+                korporatesite
+            advantages
+            portfolio
         //scripts
         +scripts(['jquery-3.2.1.min.js', 'main.js'])

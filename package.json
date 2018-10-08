@@ -33,6 +33,7 @@
     "node-normalize-scss": "^8.0.0"
   },
   "dependencies": {
-    "mdbootstrap": "^4.5.11"
+    "mdbootstrap": "^4.5.11",
+    "normalize.css": "^8.0.0"
   }
 }
