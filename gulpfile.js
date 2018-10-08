@@ -1,115 +1,87 @@
-"use strict";
+const gulp = require('gulp');
+const sass = require('gulp-sass');
+const autoprefixer = require('gulp-autoprefixer');
+const cssmin = require('gulp-cssmin');
+const browserSync = require('browser-sync').create();
+const plugins = require('./js/modules');
+const concat = require('gulp-concat');
+const minify = require('gulp-minify');
+const rename = require('gulp-rename');
+const imagemin = require('gulp-imagemin');
 
-var 
-	gulp                      = require('gulp'), 
-    plumber                   = require('gulp-plumber'),
-    del                       = require('del'),
-    notify                    = require('gulp-notify'),
-    watch                     = require('gulp-watch'), 
-    pug                       = require('gulp-pug'),
-    sass                      = require('gulp-sass'),
-    prefixer                  = require('gulp-autoprefixer'),
-    cssmin                    = require('gulp-clean-css'),
-    rename                    = require('gulp-rename'),
-    imagemin                  = require('gulp-imagemin'),
-    imageminJpegRecompress    = require('imagemin-jpeg-recompress'),
-    pngquant                  = require('imagemin-pngquant'),
-    browserSync               = require('browser-sync').create();
-
-//pug
-gulp.task('pug', function () {
-  return gulp.src('src/*.pug')
-  .pipe(plumber({ errorHandler: function(err) {
-      notify.onError({
-          title: "Gulp error in " + err.plugin,
-          message:  err.toString()
-      })(err);
-  }}))
-  .pipe(pug({pretty: true}))
-  .pipe(gulp.dest('public'))
-  .pipe(browserSync.reload({stream:true})); 
+// CSS Tasks
+gulp.task('css-compile', function() {
+  gulp.src('scss/**/*.scss')
+    .pipe(sass({outputStyle: 'nested'}).on('error', sass.logError))
+    .pipe(autoprefixer({
+      browsers: ['last 10 versions'],
+      cascade: false
+    }))
+    .pipe(gulp.dest('./dist/css/'));
 });
 
-//style
-gulp.task('style', function () {
-  return gulp.src('src/style/style.sass') 
-  .pipe(plumber({ errorHandler: function(err) {
-      notify.onError({
-          title: "Sass error in " + err.plugin,
-          message:  err.toString()
-      })(err);
-  }}))
-  .pipe(sass({includePaths: require('node-normalize-scss').includePaths}).on('error', sass.logError))
-  .pipe(cssmin())
-  .pipe(rename({suffix: ".min"}))
-  .pipe(gulp.dest('public/css'))
-  .pipe(browserSync.reload({stream:true}));
+gulp.task('css-minify', function() {
+    gulp.src(['./dist/css/*.css', '!dist/css/*.min.css'])
+      .pipe(cssmin())
+      .pipe(rename({suffix: '.min'}))
+      .pipe(gulp.dest('./dist/css'))
 });
 
-//js
-gulp.task('js', function () {
-  return gulp.src('src/js/*.js') 
-  .pipe(gulp.dest('public/js'))
-  .pipe(browserSync.reload({stream: true})); 
+// JavaScript Tasks
+gulp.task('js-build', function() {
+  gulp.src(plugins.modules)
+    .pipe(concat('mdb.js'))
+    .pipe(gulp.dest('./dist/js/'))
 });
 
-//image
-gulp.task('image', function () {
-  return gulp.src('src/images/**/*.{jpg,png,jpeg,svg}') 
-  .pipe(plumber())
-  .pipe(imagemin([
-    imagemin.gifsicle({interlaced: true}),
-    imagemin.jpegtran({progressive: true}),
-    imageminJpegRecompress({
-      progressive: true,
-      loops: 5,
-      min: 70,
-      max: 90,
-      quality:'high' 
-    }),
-    imagemin.optipng({optimizationLevel: 3}),
-    pngquant({quality: '45-85', speed: 5})
-  ]))
-  .pipe(gulp.dest('public/images')) 
-  .pipe(browserSync.reload({stream: true})); 
+gulp.task('js-minify', function() {
+  gulp.src('./dist/js/mdb.js')
+    .pipe(minify({
+      ext:{
+        // src:'.js',
+        min:'.min.js'
+      },
+      noSource: true,
+    }))
+    .pipe(gulp.dest('./dist/js'));
 });
 
-
-//clean dir
-gulp.task('cleandir', function() { return del.sync('public'); }); 
-
-//watch
-gulp.task('watch', function(){
-  watch(['src/*.pug'], function(event, cb) {
-    gulp.start('pug');
-  }); 
-  watch(['src/style/*.sass'], function(event, cb) {
-    gulp.start('style');
-  }); 
-  watch(['src/js/*.js'], function(event, cb) {
-    gulp.start('js');
-  });
-  watch(['src/images/**/*.{jpg,png,jpeg,svg}'], function(event, cb) {
-    gulp.start('image');
-  });
+// Image Compression
+gulp.task('img-compression', function() {
+  gulp.src('./img/*')
+    .pipe(imagemin([
+      imagemin.gifsicle({interlaced: true}),
+      imagemin.jpegtran({progressive: true}),
+      imagemin.optipng({optimizationLevel: 5}),
+      imagemin.svgo({
+        plugins: [
+          {removeViewBox: true},
+          {cleanupIDs: false}
+        ]
+      })
+    ]))
+    .pipe(gulp.dest('./dist/img'));
 });
 
-//build
-gulp.task('build', ['cleandir', 'pug', 'style', 'js', 'image']);
-
-//run server after build
-gulp.task('runServer', ['build'], function(){
+// Live Server
+gulp.task('live-server', function() {
   browserSync.init({
     server: {
-      baseDir: "public",
-      index: "index.html"
+      baseDir: "./dist",
+      directory: true
     },
-    port: 8080,
-    notify: false,
-    logPrefix: "frontend_dev"
+    notify: false
   });
-  console.log('Сервер работает по адресу http://localhost:8080');
+
+  gulp.watch("**/*", {cwd: './dist/'}, browserSync.reload);
 });
 
-// default
-gulp.task('default', ['runServer', 'watch']);
+// Watch on everything
+gulp.task('mdb-go', function() {
+  gulp.start('live-server');
+  gulp.watch("scss/**/*.scss", ['css-compile']);
+  gulp.watch(["dist/css/*.css", "!dist/css/*.min.css"], ['css-minify']);
+  gulp.watch("js/**/*.js", ['js-build']);
+  gulp.watch("dist/js/mdb.js", ['js-minify']);
+  gulp.watch("**/*", {cwd: './img/'}, ['img-compression']);
+});
