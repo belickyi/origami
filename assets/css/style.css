@@ -85,7 +85,7 @@ A. Basic Styling
 
 body {
     color: #191919;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Montserrat', sans-serif;
     font-weight: 400;
     font-size: .9375rem;
     margin: 0;
@@ -2473,4 +2473,13 @@ E. Template Specific Elements
     .ts-carousel-centered .owl-nav .owl-prev {
         left: 2.5rem;
     }
+}
+/*custom css*/
+#particles-js {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    width: 100%;
+    height: 99%;
 }
